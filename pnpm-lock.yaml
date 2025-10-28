@@ -21,8 +21,8 @@ importers:
         specifier: 19.3.0-canary-4fdf7cf2-20251003
         version: 19.3.0-canary-4fdf7cf2-20251003(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react@19.3.0-canary-4fdf7cf2-20251003)(webpack@5.102.1)
       rwsdk:
-        specifier: 1.0.0-beta.18
-        version: 1.0.0-beta.18(@cloudflare/vite-plugin@1.13.10(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(workerd@1.20251001.0)(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0)))(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react-server-dom-webpack@19.3.0-canary-4fdf7cf2-20251003(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react@19.3.0-canary-4fdf7cf2-20251003)(webpack@5.102.1))(react@19.3.0-canary-4fdf7cf2-20251003)(typescript@5.8.3)(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0))
+        specifier: 1.0.0-beta.20
+        version: 1.0.0-beta.20(@cloudflare/vite-plugin@1.13.10(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(workerd@1.20251001.0)(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0)))(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react-server-dom-webpack@19.3.0-canary-4fdf7cf2-20251003(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react@19.3.0-canary-4fdf7cf2-20251003)(webpack@5.102.1))(react@19.3.0-canary-4fdf7cf2-20251003)(typescript@5.8.3)(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0))
       tailwindcss:
         specifier: ^4.1.16
         version: 4.1.16
@@ -2543,8 +2543,8 @@ packages:
   rsc-html-stream@0.0.7:
     resolution: {integrity: sha512-v9+fuY7usTgvXdNl8JmfXCvSsQbq2YMd60kOeeMIqCJFZ69fViuIxztHei7v5mlMMa2h3SqS+v44Gu9i9xANZA==}
 
-  rwsdk@1.0.0-beta.18:
-    resolution: {integrity: sha512-b+EiNnk44RL/9dhvUt8EcFyAcvQgtvMtEKh2Vp3BP1OzNhrJ9JgshE74+1RL0wfytIVSGC8XqbAYEOXy0wWcRw==}
+  rwsdk@1.0.0-beta.20:
+    resolution: {integrity: sha512-san22cKgMSBIpA70bn1IBjj8Q1LN1P6u7LrNXVO3Qy+b90wC8eiGzk7SA+sAtRrB6Tz3eCLA+7464W8T8wmNLg==}
     hasBin: true
     peerDependencies:
       '@cloudflare/vite-plugin': ^1.13.10
@@ -5689,7 +5689,7 @@ snapshots:
 
   rsc-html-stream@0.0.7: {}
 
-  rwsdk@1.0.0-beta.18(@cloudflare/vite-plugin@1.13.10(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(workerd@1.20251001.0)(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0)))(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react-server-dom-webpack@19.3.0-canary-4fdf7cf2-20251003(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react@19.3.0-canary-4fdf7cf2-20251003)(webpack@5.102.1))(react@19.3.0-canary-4fdf7cf2-20251003)(typescript@5.8.3)(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0)):
+  rwsdk@1.0.0-beta.20(@cloudflare/vite-plugin@1.13.10(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(workerd@1.20251001.0)(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0)))(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react-server-dom-webpack@19.3.0-canary-4fdf7cf2-20251003(react-dom@19.3.0-canary-4fdf7cf2-20251003(react@19.3.0-canary-4fdf7cf2-20251003))(react@19.3.0-canary-4fdf7cf2-20251003)(webpack@5.102.1))(react@19.3.0-canary-4fdf7cf2-20251003)(typescript@5.8.3)(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0)):
     dependencies:
       '@ast-grep/napi': 0.39.6
       '@cloudflare/vite-plugin': 1.13.10(vite@7.1.11(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.0)(yaml@2.8.1))(workerd@1.20251001.0)(wrangler@4.42.0(@cloudflare/workers-types@4.20251004.0))

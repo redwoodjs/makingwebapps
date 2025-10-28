@@ -26,7 +26,7 @@
     "react": "19.3.0-canary-4fdf7cf2-20251003",
     "react-dom": "19.3.0-canary-4fdf7cf2-20251003",
     "react-server-dom-webpack": "19.3.0-canary-4fdf7cf2-20251003",
-    "rwsdk": "1.0.0-beta.18",
+    "rwsdk": "1.0.0-beta.20",
     "tailwindcss": "^4.1.16"
   },
   "devDependencies": {
