@@ -13,3 +13,7 @@ Cloudflare has this unique piece of technology called bindings. Bindings take ex
 -->
 
 <!-- Is resend the best example? IDK. We can also do some sort of storage service, but I don't really feel like dealing with streams. -->
+
+<!-- This is a precursor to something I'm going to call "open bindings" which is essentially a 1:1 copy of Cloudflare's bindings for r2, kv, queues, email, etc... but giving access to 3rd party services.
+
+This means you can ship on vercel, but still use bindings, or you can ship on cloudflare and still use bindings for 3rd party services -->
