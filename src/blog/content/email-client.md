@@ -187,9 +187,9 @@ export class DatabaseDurableObject extends SqliteDurableObject {
   migrations = migrations;
 }
 
-export type Database = Database<typeof migrations>;
+export type DB = Database<typeof migrations>;
 
-export const db = createDb<Database>(
+export const db = createDb<DB>(
   env.DATABASE,
   "emails" // unique key for this database instance
 );
@@ -305,3 +305,142 @@ Let's link to this page, now clicking on this link will take us to the detail pa
 ## Sending email
 
 Let's create a ComposeEmail component. This will be an interactive component. We'll invoke a React Server Function to send the email.
+
+We'll create both the server action and the client component in the same file:
+
+```ts src/app/pages/compose/actions.ts
+import { EmailMessage } from "cloudflare:email";
+import { env } from "cloudflare:workers";
+
+async function sendEmail({
+  from,
+  to,
+  subject,
+  message,
+}: {
+  from: string;
+  to: string;
+  subject: string;
+  message: string;
+}) {
+  "use server";
+  // EmailMessage constructor: (from, to, subject, body)
+  await env.EMAIL.send(new EmailMessage(from, to, subject, message));
+  return { success: true };
+}
+```
+
+```tsx src/app/pages/compose/index.tsx
+"use client";
+
+import { useState } from "react";
+
+export function Compose() {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [result, setResult] = useState<{ success: boolean } | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSending(true);
+    setResult(null);
+
+    try {
+      const response = await sendEmail({ from, to, subject, message });
+      setResult(response);
+      // Reset form on success
+      if (response.success) {
+        setFrom("");
+        setTo("");
+        setSubject("");
+        setMessage("");
+      }
+    } catch (error) {
+      setResult({ success: false });
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+        maxWidth: "600px",
+      }}
+    >
+      <div>
+        <label htmlFor="from">From:</label>
+        <input
+          id="from"
+          type="email"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          required
+          disabled={isSending}
+        />
+      </div>
+      <div>
+        <label htmlFor="to">To:</label>
+        <input
+          id="to"
+          type="email"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          required
+          disabled={isSending}
+        />
+      </div>
+      <div>
+        <label htmlFor="subject">Subject:</label>
+        <input
+          id="subject"
+          type="text"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          required
+          disabled={isSending}
+        />
+      </div>
+      <div>
+        <label htmlFor="message">Message:</label>
+        <textarea
+          id="message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          required
+          disabled={isSending}
+          rows={10}
+        />
+      </div>
+      <button type="submit" disabled={isSending}>
+        {isSending ? "Sending..." : "Send Email"}
+      </button>
+      {result && (
+        <div style={{ color: result.success ? "green" : "red" }}>
+          {result.success ? "Email sent successfully!" : "Failed to send email"}
+        </div>
+      )}
+    </form>
+  );
+}
+```
+
+Now let's add a route to display the compose form. Update your `worker.tsx`:
+
+```tsx worker.tsx
+import { Compose } from "@/app/pages/compose";
+
+const app = defineApp([
+  // ... existing routes ...
+  route("/compose", Compose),
+]);
+```
+
+You can now navigate to `/compose` to see the email composition form. When you submit it, the email will be sent using the EMAIL binding we configured earlier.
