@@ -99,7 +99,7 @@ We will create a route called `send` to emulate sending an email. This route for
 Add this route to your `defineApp` in `src/worker.tsx`:
 
 ```tsx
-route("/send", async function ({ request }) {
+route("/test", async function ({ request }) {
   const url = new URL(request.url);
   const from = url.searchParams.get("from") || "sender@example.com";
   const to = url.searchParams.get("to") || "recipient@example.com";
@@ -122,25 +122,7 @@ route("/send", async function ({ request }) {
 }),
 ```
 
-Test this using the following script:
-
-```bash
-curl --request POST 'http://localhost:8787/send?from=sender@example.com&to=recipient@example.com' \
-  --header 'Content-Type: text/plain' \
-  --data-raw 'Received: from smtp.example.com (127.0.0.1)
-        by cloudflare-email.com (unknown) id 4fwwffRXOpyR
-        for <recipient@example.com>; Tue, 27 Aug 2024 15:50:20 +0000
-From: "John" <sender@example.com>
-Reply-To: sender@example.com
-To: recipient@example.com
-Subject: Testing Email Workers Local Dev
-Content-Type: text/html; charset="windows-1252"
-X-Mailer: Curl
-Date: Tue, 27 Aug 2024 08:49:44 -0700
-Message-ID: <6114391943504294873000@ZSH-GHOSTTY>
-
-Hi there'
-```
+Now access the `test` route and watch the messages in your console.
 
 ## Storing emails in a database
 
@@ -205,19 +187,18 @@ export class DatabaseDurableObject extends SqliteDurableObject {
   migrations = migrations;
 }
 
-export type AppDatabase = Database<typeof migrations>;
+export type Database = Database<typeof migrations>;
 
-export const db = createDb<AppDatabase>(
+export const db = createDb<Database>(
   env.DATABASE,
   "emails" // unique key for this database instance
 );
 ```
 
-The final step is to export this database:
+The final step is to export this database in `worker.tsx`:
 
 ```tsx
-import { db, DatabaseDurableObject } from "@/db";
-export { DatabaseDurableObject };
+export { DatabaseDurableObject } from "@/db";
 ```
 
 ### Saving emails in the database
@@ -233,7 +214,7 @@ export default {
   email: async function (message) {
     const { to, from, subject } = parseMimeMessage(message.raw);
     await db.emails.insert({
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID(), // TODO: let's just use auto-increment.
       to,
       from,
       subject,
