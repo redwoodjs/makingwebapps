@@ -14,5 +14,5 @@ export default defineApp([
     // setup ctx here
     ctx;
   },
-  render(Document, [route("/", Home), prefix("/blog", blogRoutes)]),
+  render(Document, blogRoutes),
 ]);

@@ -1,9 +1,7 @@
-import * as PostalMime from "postal-mime";
-import { EmailMessage } from "cloudflare:email";
-import { createMimeMessage } from "mimetext";
+import PostalMime from "postal-mime";
 import { render, route } from "rwsdk/router";
 import { defineApp } from "rwsdk/worker";
-import { env, WorkerEntrypoint } from "cloudflare:workers";
+import { WorkerEntrypoint } from "cloudflare:workers";
 
 import { Document } from "@/app/Document";
 import { setCommonHeaders } from "@/app/headers";
@@ -11,7 +9,9 @@ import { EmailsPage } from "@/app/pages/emails";
 import { EmailPage } from "@/app/pages/email";
 import { ComposePage } from "@/app/pages/compose";
 
-export { DatabaseDurableObject } from "@/db/do";
+import { db } from "@/db";
+
+export { DatabaseDurableObject } from "@/db";
 
 export type AppContext = {};
 
@@ -21,31 +21,27 @@ const app = defineApp([
     // setup ctx here
     ctx;
   },
-  // Email test route
-  route("/email/send", async function () {
-    const msg = createMimeMessage();
-    msg.setSender({ name: "Email Client", addr: "[email protected]" });
-    msg.setRecipient("[email protected]");
-    msg.setSubject("An email generated in a worker");
-    msg.addMessage({
-      contentType: "text/plain",
-      data: "Congratulations, you just sent an email from a worker.",
-    });
 
-    const message = new EmailMessage(
-      "[email protected]",
-      "[email protected]",
-      msg.asRaw()
-    );
-    await env.EMAIL.send(message);
-    return Response.json({ ok: true });
-  }),
   // Simulate incoming email route
-  route("/simulate-incoming-email", async function ({ request }) {
+  route("/test", async function ({ request }) {
     const url = new URL(request.url);
     const from = url.searchParams.get("from") || "sender@example.com";
     const to = url.searchParams.get("to") || "recipient@example.com";
-    const body = await request.text();
+
+    // Construct raw email body
+    const emailBody = `Received: from smtp.example.com (127.0.0.1)
+        by cloudflare-email.com (unknown) id 4fwwffRXOpyR
+        for <${to}>; Tue, 27 Aug 2024 15:50:20 +0000
+From: "John" <${from}>
+Reply-To: ${from}
+To: ${to}
+Subject: Testing Email Workers Local Dev
+Content-Type: text/html; charset="windows-1252"
+X-Mailer: Curl
+Date: Tue, 27 Aug 2024 08:49:44 -0700
+Message-ID: <6114391943504294873000@ZSH-GHOSTTY>
+
+Hi there`;
 
     // Forward the request to Cloudflare's email handler endpoint
     const emailHandlerUrl = new URL("/cdn-cgi/handler/email", url.origin);
@@ -57,7 +53,7 @@ const app = defineApp([
       headers: {
         "Content-Type": "application/json",
       },
-      body,
+      body: emailBody,
     });
 
     return response;
@@ -71,46 +67,37 @@ const app = defineApp([
   ]),
 ]);
 
-/**
- * This is the default worker entrypoint for the Worker.
- * It extends the WorkerEntrypoint class and implements the email and fetch handlers.
- */
 export default class DefaultWorker extends WorkerEntrypoint<Env> {
-  /**
-   * Email handler for the Worker.
-   * The `message` parameter is a ForwardableEmailMessage object
-   *
-   * You can call `message.reply()` to respond directly to the
-   * inbound sender without additional verification steps.
-   */
   async email(message: ForwardableEmailMessage) {
-    // console.log("📧 Email received");
-    // // Parse the inbound email
-    // const parser = new PostalMime.default();
-    // const rawEmail = new Response((message as any).raw);
-    // const receivedEmail = await parser.parse(await rawEmail.arrayBuffer());
-    // console.log("📧 Email received and parsed", receivedEmail);
-    // // Extract email data for database storage
-    // const to = receivedEmail.to?.[0]?.address || "";
-    // const from = receivedEmail.from?.address || "";
-    // const subject = receivedEmail.subject || "";
-    // // Create database instance with this.env
-    // //const emailDb = createDb<DB>(this.env.DATABASE, "emails");
-    // // Store the email in the database
-    // await (emailDb as any).emails.insert({
-    //   id: crypto.randomUUID(),
-    //   to,
-    //   from,
-    //   subject,
-    //   message: receivedEmail.text || receivedEmail.html || "",
-    //   raw: (message as any).raw,
-    // });
+    console.log("📧 Email received");
+    // Parse the inbound email
+    const parser = new PostalMime();
+    // Convert ReadableStream to ArrayBuffer
+    const rawEmailBuffer = await new Response(message.raw).arrayBuffer();
+    const receivedEmail = await parser.parse(rawEmailBuffer);
+    console.log("📧 Email received and parsed", receivedEmail);
+    // Extract email data for database storage
+    const to = receivedEmail.to?.[0]?.address || "";
+    const from = receivedEmail.from?.address || "";
+    const subject = receivedEmail.subject || "";
+
+    // Convert raw email to text for database storage
+    const rawEmailText = new TextDecoder().decode(rawEmailBuffer);
+
+    db.insertInto("emails")
+      .values({
+        id: crypto.randomUUID(),
+        to,
+        from,
+        subject,
+        message: receivedEmail.text || receivedEmail.html || "",
+        raw: rawEmailText,
+      })
+      .execute();
+
+    return Response.json({ ok: true });
   }
 
-  /**
-   * Fetch handler for the Worker.
-   * Needed so that the worker can handle the request and pass it to the app.
-   */
   override async fetch(request: Request) {
     return await app.fetch(request, this.env, this.ctx);
   }
