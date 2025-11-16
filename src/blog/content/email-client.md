@@ -12,7 +12,7 @@ In this guide, you’ll build a simple email client that runs entirely on Cloudf
 
 We’ll use RedwoodSDK and Cloudflare’s developer platform to put everything together. The project takes about an hour to complete and will walk you through the fundamentals of building modern webapps using a real-world example.
 
-## Prerequistes
+## Prerequisites
 
 Please follow the installation guide over here.
 
@@ -30,7 +30,7 @@ pnpm dev
 
 That’s it! You now have a local webserver running Miniflare, Cloudflare’s development environment, think of it as a tiny version of the Cloudflare network running on your laptop.
 
-Open your browser and access the webserver; you'll be greated by Redwood's
+Open your browser and access the webserver; you'll be greeted by Redwood's welcome page.
 
 ## Configuring email
 
@@ -46,7 +46,7 @@ First off; you need to "bind" these services to your worker. Add this to the `wr
   ]
 ```
 
-Then run `pnpm generate` to update the types. You now have the ability to send and receive emails;
+Then run `pnpm generate` to update the types. You now have the ability to send and receive emails.
 
 ### Sending an email
 
@@ -54,13 +54,14 @@ To test sending an email edit `worker.tsx` and add the following route
 
 ```tsx
 import { EmailMessage } from "cloudflare:email";
+import { env } from "cloudflare:workers";
 
 export default defineApp([
-  route("/email/send", function () {
+  route("/email/send", async function () {
     const to = "peter@redwoodjs.com";
     const from = "peter@redwoodjs.com";
-    await env.EMAIL.send(to, from, "hello world");
-    return new Respone("email sent");
+    await env.EMAIL.send(new EmailMessage(from, to, "hello world"));
+    return new Response("email sent");
   }),
 ]);
 ```
@@ -69,7 +70,7 @@ When you access `/email/send` in your browser we'll execute the "EMAIL" binding 
 
 You will see a message in your terminal:
 
-```
+```bash
 [wrangler:inf] send_email binding called with the following message:
   /var/folders/33/pn86qymd0w50htvsjp93rys40000gn/T/miniflare-f9be031ff417b2e67f2ac4cf94cb1b40/files/email/33e0a255-a7df-4f40-b712-0291806ed2b3.eml
 ```
@@ -93,13 +94,39 @@ export default {
 };
 ```
 
-Test this using the following script, this will simulate a real world email event that usually hits your server when your worker receives an email in production.
+We will create a route called `send` to emulate sending an email. This route forwards requests to Cloudflare's email handler endpoint (`/cdn-cgi/handler/email`), simulating a real world email event that usually hits your server when your worker receives an email in production.
 
+Add this route to your `defineApp` in `src/worker.tsx`:
+
+```tsx
+route("/send", async function ({ request }) {
+  const url = new URL(request.url);
+  const from = url.searchParams.get("from") || "sender@example.com";
+  const to = url.searchParams.get("to") || "recipient@example.com";
+  const body = await request.text();
+
+  // Forward the request to Cloudflare's email handler endpoint
+  const emailHandlerUrl = new URL("/cdn-cgi/handler/email", url.origin);
+  emailHandlerUrl.searchParams.set("from", from);
+  emailHandlerUrl.searchParams.set("to", to);
+
+  const response = await fetch(emailHandlerUrl.toString(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body,
+  });
+
+  return response;
+}),
 ```
-curl --request POST 'http://localhost:8787/cdn-cgi/handler/email' \
-  --url-query 'from=sender@example.com' \
-  --url-query 'to=recipient@example.com' \
-  --header 'Content-Type: application/json' \
+
+Test this using the following script:
+
+```bash
+curl --request POST 'http://localhost:8787/send?from=sender@example.com&to=recipient@example.com' \
+  --header 'Content-Type: text/plain' \
   --data-raw 'Received: from smtp.example.com (127.0.0.1)
         by cloudflare-email.com (unknown) id 4fwwffRXOpyR
         for <recipient@example.com>; Tue, 27 Aug 2024 15:50:20 +0000
@@ -123,7 +150,7 @@ First thing we need to do is create a migration, add database durable object.
 We'll store our emails in a database table called "emails," the first thing we need to do is create a migration in `src/db/migrations.ts`
 
 ```tsx
-import { type Migrations } from "rwsdk/db";
+import { type Migrations, db } from "rwsdk/db";
 
 export const migrations = {
   "001_initial_schema": {
@@ -132,7 +159,7 @@ export const migrations = {
         .createTable("emails")
         .addColumn("id", "text", (col) => col.primaryKey())
         .addColumn("from", "text", (col) => col.notNull())
-        .addColumn("to", "integer", (col) => col.notNull())
+        .addColumn("to", "text", (col) => col.notNull())
         .addColumn("subject", "text", (col) => col.notNull())
         .addColumn("message", "text", (col) => col.notNull())
         .addColumn("raw", "text", (col) => col.notNull())
@@ -153,25 +180,25 @@ Then bind this database in `wrangler.jsonc`:
   "durable_objects": {
     "bindings": [
       {
-        "name": "APP_DURABLE_OBJECT",
-        "class_name": "AppDurableObject"
+        "name": "DATABASE",
+        "class_name": "DatabaseDurableObject"
       }
     ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["AppDurableObject"]
+      "new_sqlite_classes": ["DatabaseDurableObject"]
     }
   ]
 }
 ```
 
-Run `pnpm generate`, then create the database in `src/db/index.ts
+Run `pnpm generate`, then create the database in `src/db/index.ts`:
 
 ```ts
 import { env } from "cloudflare:workers";
-import { type Database, createDb } from "rwsdk/db";
+import { type Database, createDb, SqliteDurableObject } from "rwsdk/db";
 import { migrations } from "@/db/migrations";
 
 export class DatabaseDurableObject extends SqliteDurableObject {
@@ -181,7 +208,7 @@ export class DatabaseDurableObject extends SqliteDurableObject {
 export type AppDatabase = Database<typeof migrations>;
 
 export const db = createDb<AppDatabase>(
-  env.APP_DURABLE_OBJECT,
+  env.DATABASE,
   "emails" // unique key for this database instance
 );
 ```
@@ -195,18 +222,23 @@ export { DatabaseDurableObject };
 
 ### Saving emails in the database
 
-Now that we have a place where we can store the receveived emails we're going to parse and insert them into our table; in src `worker.tsx`
+Now that we have a place where we can store the received emails we're going to parse and insert them into our table; in `src/worker.tsx`:
 
 ```tsx
+import { parseMimeMessage } from "cloudflare:email";
+import { db } from "@/db";
+
 export default {
   fetch: app.fetch,
-  email: async function (raw) {
-    const { to, from, subject } = parseMimeMessage(message);
+  email: async function (message) {
+    const { to, from, subject } = parseMimeMessage(message.raw);
     await db.emails.insert({
+      id: crypto.randomUUID(),
       to,
       from,
       subject,
-      raw,
+      message: message.raw,
+      raw: message.raw,
     });
   },
 };
@@ -219,34 +251,38 @@ Every time we receive an email it is inserted into this database.
 We will create a Page that retrieves the emails and lists them:
 
 ```tsx src/pages/emails.tsx
-import { db } from "@app/db"
+import { db } from "@/db";
 
 export async function Emails() {
-    const emails = await db.emails.selectAll()
-    return (<div>
-    <h1>Inbox - ${emails.length}</h1>
-    <ol>
-        {email.map(e => <li> {date} {subject} {sender}</li>)}
-    <ol><div>)
+  const emails = await db.emails.selectAll();
+  return (
+    <div>
+      <h1>Inbox - {emails.length}</h1>
+      <ol>
+        {emails.map((e) => (
+          <li>
+            {e.subject} {e.from}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 ```
 
 We will now return this as the response on a route, we'll remove the "Home" page and replace it with our Inbox component.
 
-```worker.tsx
+```tsx worker.tsx
+import { Emails } from "@/app/pages/emails";
 
-import { Emails } from "@/app/pages/emails.tsx"
-
-const app = defineApp([
-    route('/', Inbox),
-])
+const app = defineApp([route("/", Emails)]);
 ```
 
 Access the home page and see a list of your emails.
 
 ### Viewing email detail
 
-Let's add a link to the deail page on the inbox page.
+Let's add a link to the detail page on the inbox page.
 
 ```
 
@@ -255,16 +291,17 @@ Let's add a link to the deail page on the inbox page.
 Now let's build the detail page:
 
 ```tsx
+import { db } from "@/db";
+
 export async function EmailPage({ id }) {
-  const email = await db.emails.finyOneOrThrow();
+  const email = await db.emails.findOneOrThrow({ id });
 
   return (
     <div>
-      <div>Email a</div>
-      <div>Email a</div>
-      <div>Email a</div>
-      <div>Email a</div>
-      <div>Email a</div>
+      <div>From: {email.from}</div>
+      <div>To: {email.to}</div>
+      <div>Subject: {email.subject}</div>
+      <div>{email.message}</div>
     </div>
   );
 }
@@ -272,15 +309,17 @@ export async function EmailPage({ id }) {
 
 Add a route
 
-```worker.tsx
+```tsx worker.tsx
+import { EmailPage } from "@/app/pages/emails";
+
 const app = defineApp([
-    route('/emails/:emailID', function({ params}) {
-        return <Email id={params.emailID}>
-    })
-])
+  route("/emails/:emailID", function ({ params }) {
+    return <EmailPage id={params.emailID} />;
+  }),
+]);
 ```
 
-Let's link to this page, now clicking on this link will take us to the detail page - so we can view the details of an emial.
+Let's link to this page, now clicking on this link will take us to the detail page - so we can view the details of an email.
 
 ## Sending email
 
