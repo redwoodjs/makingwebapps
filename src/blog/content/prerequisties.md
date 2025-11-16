@@ -15,6 +15,6 @@ If you're already using Mac OS or Linux, great! But if you're using Windows, the
 
 NodeJS
 
-Head on over to https://nodejs.org/en/download, install the LTS version of NodeJS for your operating system, using `fnm` and `pnpm`
+Head on over to https://nodejs.org/en/download, install the LTS version of NodeJS for your operating system, using `nvm` and `pnpm`
 
 I recommend using a text-editor like Cursor or VS Code.
